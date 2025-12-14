@@ -15,38 +15,23 @@ async function generateRSA(modulusLength) {
     ["encrypt", "decrypt"]
   );
 
-  const publicKeyJwk = await window.crypto.subtle.exportKey(
-    "jwk",
-    keyPair.publicKey
-  );
-  const privateKeyJwk = await window.crypto.subtle.exportKey(
-    "jwk",
-    keyPair.privateKey
-  );
-
-  return { publicKeyJwk, privateKeyJwk };
+  return {
+    publicKeyJwk: await crypto.subtle.exportKey("jwk", keyPair.publicKey),
+    privateKeyJwk: await crypto.subtle.exportKey("jwk", keyPair.privateKey)
+  };
 }
 
 async function generateECC(namedCurve) {
   const keyPair = await window.crypto.subtle.generateKey(
-    {
-      name: "ECDH",
-      namedCurve
-    },
+    { name: "ECDH", namedCurve },
     true,
     ["deriveKey", "deriveBits"]
   );
 
-  const publicKeyJwk = await window.crypto.subtle.exportKey(
-    "jwk",
-    keyPair.publicKey
-  );
-  const privateKeyJwk = await window.crypto.subtle.exportKey(
-    "jwk",
-    keyPair.privateKey
-  );
-
-  return { publicKeyJwk, privateKeyJwk };
+  return {
+    publicKeyJwk: await crypto.subtle.exportKey("jwk", keyPair.publicKey),
+    privateKeyJwk: await crypto.subtle.exportKey("jwk", keyPair.privateKey)
+  };
 }
 
 function KeyGenerationPanel() {
@@ -56,24 +41,23 @@ function KeyGenerationPanel() {
   const [loading, setLoading] = useState(false);
   const [keys, setKeys] = useState(null);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(null);
 
   const handleGenerate = async () => {
     setError("");
     setKeys(null);
 
-    if (!window.crypto || !window.crypto.subtle) {
+    if (!window.crypto?.subtle) {
       setError("Web Crypto API not available in this browser.");
       return;
     }
 
     try {
       setLoading(true);
-      let result;
-      if (algo === "RSA") {
-        result = await generateRSA(rsaBits);
-      } else {
-        result = await generateECC(eccCurve);
-      }
+      const result =
+        algo === "RSA"
+          ? await generateRSA(rsaBits)
+          : await generateECC(eccCurve);
       setKeys(result);
     } catch (e) {
       console.error(e);
@@ -83,30 +67,39 @@ function KeyGenerationPanel() {
     }
   };
 
-  const copyToClipboard = async (text) => {
+  const copyToClipboard = async (text, type) => {
     try {
       await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard");
+      setCopied(type);
+      setTimeout(() => setCopied(null), 1500);
     } catch (err) {
       console.error(err);
-      alert("Copy failed");
     }
   };
 
   return (
-    <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4 shadow-lg shadow-slate-900/40">
-      <h2 className="text-sm font-semibold mb-1">Interactive Key Generator</h2>
-      <p className="text-[11px] text-slate-400 mb-3">
-        Generate RSA or ECC key<strong>locally in your browser</strong> using the
-        Web Crypto API.
-      </p>
+    <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700 rounded-2xl p-5 shadow-xl shadow-slate-900/60 overflow-hidden">
+      {/* glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_65%)]" />
 
-      <div className="flex items-center gap-3 mb-3">
+      {/* header */}
+      <div className="relative mb-4">
+        <h2 className="text-sm font-semibold tracking-wide">
+          Key Generator
+        </h2>
+        <p className="text-[11px] text-slate-400 mt-0.5">
+          Generate RSA or ECC keys <strong>locally</strong> using the Web Crypto
+          API.
+        </p>
+      </div>
+
+      {/* algorithm switch */}
+      <div className="flex items-center gap-3 mb-4">
         <button
           onClick={() => setAlgo("RSA")}
-          className={`px-3 py-1 text-xs rounded-full border transition ${
+          className={`px-4 py-1.5 text-[11px] rounded-full border transition-all ${
             algo === "RSA"
-              ? "bg-sky-500 text-white border-sky-400"
+              ? "bg-sky-500/90 text-white border-sky-400 shadow shadow-sky-500/30"
               : "bg-slate-900 border-slate-600 text-slate-300"
           }`}
         >
@@ -114,9 +107,9 @@ function KeyGenerationPanel() {
         </button>
         <button
           onClick={() => setAlgo("ECC")}
-          className={`px-3 py-1 text-xs rounded-full border transition ${
+          className={`px-4 py-1.5 text-[11px] rounded-full border transition-all ${
             algo === "ECC"
-              ? "bg-emerald-500 text-white border-emerald-400"
+              ? "bg-emerald-500/90 text-white border-emerald-400 shadow shadow-emerald-500/30"
               : "bg-slate-900 border-slate-600 text-slate-300"
           }`}
         >
@@ -124,8 +117,9 @@ function KeyGenerationPanel() {
         </button>
       </div>
 
+      {/* options */}
       {algo === "RSA" ? (
-        <div className="mb-3">
+        <div className="mb-4">
           <label className="block text-[11px] mb-1 text-slate-300">
             RSA modulus length (bits)
           </label>
@@ -134,9 +128,9 @@ function KeyGenerationPanel() {
               <button
                 key={bits}
                 onClick={() => setRsaBits(bits)}
-                className={`px-2 py-1 text-[11px] rounded-full border transition ${
+                className={`px-3 py-1 text-[11px] rounded-full border transition-all ${
                   rsaBits === bits
-                    ? "bg-sky-500 text-white border-sky-400"
+                    ? "bg-sky-500/90 text-white border-sky-400 shadow shadow-sky-500/30"
                     : "bg-slate-900 border-slate-600 text-slate-300"
                 }`}
               >
@@ -146,7 +140,7 @@ function KeyGenerationPanel() {
           </div>
         </div>
       ) : (
-        <div className="mb-3">
+        <div className="mb-4">
           <label className="block text-[11px] mb-1 text-slate-300">
             ECC curve
           </label>
@@ -155,9 +149,9 @@ function KeyGenerationPanel() {
               <button
                 key={curve}
                 onClick={() => setEccCurve(curve)}
-                className={`px-2 py-1 text-[11px] rounded-full border transition ${
+                className={`px-3 py-1 text-[11px] rounded-full border transition-all ${
                   eccCurve === curve
-                    ? "bg-emerald-500 text-white border-emerald-400"
+                    ? "bg-emerald-500/90 text-white border-emerald-400 shadow shadow-emerald-500/30"
                     : "bg-slate-900 border-slate-600 text-slate-300"
                 }`}
               >
@@ -168,70 +162,72 @@ function KeyGenerationPanel() {
         </div>
       )}
 
+      {/* generate button */}
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="mt-1 w-full text-xs font-semibold py-2 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 border border-sky-300 shadow hover:shadow-lg disabled:opacity-60"
+        className="mt-2 w-full text-xs font-semibold py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 border border-sky-300/40 shadow-lg hover:shadow-xl transition disabled:opacity-60"
       >
         {loading ? "Generating..." : `Generate ${algo} key`}
       </button>
 
+      {/* error */}
       {error && (
-        <p className="mt-2 text-[11px] text-red-400 bg-red-950/40 border border-red-700/40 rounded-lg p-2">
+        <p className="mt-3 text-[11px] text-red-400 bg-red-950/40 border border-red-700/40 rounded-xl p-2">
           {error}
         </p>
       )}
 
+      {/* keys */}
       {keys && (
-        <div className="mt-3 space-y-2 max-h-64 overflow-auto text-[10px] bg-slate-900/80 border border-slate-700 rounded-xl p-2 scrollbar-thin">
+        <div className="mt-4 space-y-3 max-h-72 overflow-auto text-[10px] bg-slate-900/80 border border-slate-700 rounded-xl p-3 scrollbar-thin">
+          {/* public key */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-slate-200">
                 Public key (JWK)
               </span>
               <button
-                className="text-[10px] px-2 py-0.5 rounded-full border border-slate-600 hover:border-sky-400"
                 onClick={() =>
                   copyToClipboard(
-                    JSON.stringify(keys.publicKeyJwk, null, 2)
+                    JSON.stringify(keys.publicKeyJwk, null, 2),
+                    "public"
                   )
                 }
+                className="text-[10px] px-2 py-0.5 rounded-full border border-slate-600 hover:border-sky-400 transition"
               >
-                Copy
+                {copied === "public" ? "✓ Copied" : "Copy"}
               </button>
             </div>
-            <pre className="whitespace-pre-wrap break-all text-slate-300">
+            <pre className="whitespace-pre-wrap break-all text-slate-300 leading-relaxed">
               {JSON.stringify(keys.publicKeyJwk, null, 2)}
             </pre>
           </div>
 
+          {/* private key */}
           <div>
             <div className="flex items-center justify-between mb-1 mt-2">
               <span className="font-semibold text-slate-200">
                 Private key (JWK)
               </span>
               <button
-                className="text-[10px] px-2 py-0.5 rounded-full border border-slate-600 hover:border-emerald-400"
                 onClick={() =>
                   copyToClipboard(
-                    JSON.stringify(keys.privateKeyJwk, null, 2)
+                    JSON.stringify(keys.privateKeyJwk, null, 2),
+                    "private"
                   )
                 }
+                className="text-[10px] px-2 py-0.5 rounded-full border border-slate-600 hover:border-emerald-400 transition"
               >
-                Copy
+                {copied === "private" ? "✓ Copied" : "Copy"}
               </button>
             </div>
-            <pre className="whitespace-pre-wrap break-all text-slate-300">
+            <pre className="whitespace-pre-wrap break-all text-slate-300 leading-relaxed">
               {JSON.stringify(keys.privateKeyJwk, null, 2)}
             </pre>
           </div>
         </div>
       )}
-
-      <p className="mt-2 text-[10px] text-slate-400">
-        Keys are generated in memory and shown here. For real systems, you’d need secure
-        storage, rotation, and a full security review.
-      </p>
     </div>
   );
 }
