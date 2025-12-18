@@ -103,7 +103,7 @@ export default function RsaEccBenchmarkPanel() {
     if (mode === "single") {
       const cfg = getCfg(singleId);
       const res =
-        cfg.algo === "RSA"
+        cfg.algo === "RSA"  
           ? await liveRSA(cfg.bits, setProgressA)
           : await liveECC(cfg.curve, setProgressA);
       setResult({ mode: "single", cfg, res });
@@ -203,7 +203,7 @@ export default function RsaEccBenchmarkPanel() {
           onClick={runBenchmark}
           className="w-full py-2.5 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl text-xs font-bold disabled:opacity-60"
         >
-          {running ? "Running…" : "Run Benchmark"}
+          {running ? "Running…" : "Run"}
         </button>
       </div>
 

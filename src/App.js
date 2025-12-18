@@ -9,7 +9,6 @@ import KeyGeneratorPage from "./pages/KeyGeneratorPage";
 import PerformanceChartPage from "./pages/PerformanceChartPage";
 import ComparisonPage from "./pages/ComparisonPage";
 import RsaEccBenchmarkPanel from "./components/RsaEccBenchmarkPanel";
-import SecurityEfficiencyLab from "./pages/SecurityEfficiencyLab";
 
 function App() {
   return (
@@ -41,7 +40,6 @@ function App() {
           <Route path="/comparison" element={<ComparisonPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
           <Route path="/benchmark" element={<RsaEccBenchmarkPanel />} />
-          <Route path="/security-efficiency-lab" element={<SecurityEfficiencyLab />} />
         </Routes>
 
         <footer className="text-xs text-center text-slate-400 mt-4">

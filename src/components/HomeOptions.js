@@ -14,11 +14,11 @@ function HomeOptions() {
     },
     {
       path: "/benchmark",
-      title: "Rsa & Ecc Run benchmark",
+      title: "Rsa & Ecc Crypto run",
       emoji: "⚖️",
       description:
         "Check single test and both compare test with bar graph in timing basis.",
-      cta: "Run Benchmarks"
+      cta: "Crypto Run"
     },
     {
       path: "/graph",
