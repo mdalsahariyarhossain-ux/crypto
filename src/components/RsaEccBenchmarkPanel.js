@@ -135,7 +135,7 @@ export default function RsaEccBenchmarkPanel() {
       {/* LEFT PANEL */}
       <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
 
-        <h2 className="text-sky-300 text-lg font-semibold">⚡ Crypto Run</h2>
+        <h2 className="text-sky-300 text-lg font-semibold">⚡ Crypto Run(20 times)</h2>
 
         <div className="flex gap-3">
           <button
