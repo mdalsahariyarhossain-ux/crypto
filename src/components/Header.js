@@ -114,6 +114,7 @@ function Header() {
               ["🏠", "/", "Home"],
               ["🔑", "/key-generator", "Key Generator"],
               ["⚖️", "/benchmark", "RSA & ECC Runtime"],
+              ["⚖️", "/Encryption-Decryption", "Encryption Decryption Runtime"],
               ["📈", "/Graph", "Performance Charts"],
             ].map(([icon, path, label]) => (
               <li key={path}>
