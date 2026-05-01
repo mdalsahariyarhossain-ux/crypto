@@ -50,15 +50,15 @@ export default function EncryptionDecryptionPage() {
             ["encrypt", "decrypt"]
           );
         } else {
-          keyPair = await crypto.subtle.generateKey(
-            {
-              name: "ECDSA",
-              namedCurve: key,
-            },
-            true,
-            ["sign", "verify"]
-          );
-        }
+            keyPair = await crypto.subtle.generateKey(
+              {
+                name: "ECDH",
+                namedCurve: key,
+              },
+              true,
+              ["deriveKey"]
+            );
+          }
 
         const keyTime = performance.now() - keyStart;
 
@@ -86,33 +86,84 @@ export default function EncryptionDecryptionPage() {
 
           decTime = performance.now() - decStart;
         } else {
-          const signStart = performance.now();
+  // Generate receiver key pair for ECDH
+  const receiverKeys = await crypto.subtle.generateKey(
+    {
+      name: "ECDH",
+      namedCurve: key,
+    },
+    true,
+    ["deriveKey"]
+  );
 
-          const signature = await crypto.subtle.sign(
-            {
-              name: "ECDSA",
-              hash: "SHA-256",
-            },
-            keyPair.privateKey,
-            message
-          );
+  // Generate sender key pair
+  const senderKeys = await crypto.subtle.generateKey(
+    {
+      name: "ECDH",
+      namedCurve: key,
+    },
+    true,
+    ["deriveKey"]
+  );
 
-          encTime = performance.now() - signStart;
+  // Encryption timing
+  const encStart = performance.now();
 
-          const verifyStart = performance.now();
+  const aesKey = await crypto.subtle.deriveKey(
+    {
+      name: "ECDH",
+      public: receiverKeys.publicKey,
+    },
+    senderKeys.privateKey,
+    {
+      name: "AES-GCM",
+      length: 256,
+    },
+    true,
+    ["encrypt", "decrypt"]
+  );
 
-          await crypto.subtle.verify(
-            {
-              name: "ECDSA",
-              hash: "SHA-256",
-            },
-            keyPair.publicKey,
-            signature,
-            message
-          );
+  const iv = crypto.getRandomValues(new Uint8Array(12));
 
-          decTime = performance.now() - verifyStart;
-        }
+  const encrypted = await crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv,
+    },
+    aesKey,
+    message
+  );
+
+  encTime = performance.now() - encStart;
+
+  // Decryption timing
+  const decStart = performance.now();
+
+  const receiverAESKey = await crypto.subtle.deriveKey(
+    {
+      name: "ECDH",
+      public: senderKeys.publicKey,
+    },
+    receiverKeys.privateKey,
+    {
+      name: "AES-GCM",
+      length: 256,
+    },
+    true,
+    ["encrypt", "decrypt"]
+  );
+
+  await crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv,
+    },
+    receiverAESKey,
+    encrypted
+  );
+
+  decTime = performance.now() - decStart;
+}
 
         // Running Average Update
         const item = tempResults[i];
@@ -231,12 +282,8 @@ export default function EncryptionDecryptionPage() {
                     {operation === "keyGen"
                       ? "Key Generation"
                       : operation === "enc"
-                      ? algorithm === "RSA"
-                        ? "Encrypt"
-                        : "Sign"
-                      : algorithm === "RSA"
-                      ? "Decrypt"
-                      : "Verify"}
+                      ? "Encrypt"
+                      : "Decrypt"}
                   </div>
                 </div>
               );
@@ -288,7 +335,7 @@ export default function EncryptionDecryptionPage() {
     {/* Encrypt / Sign */}
     <div className={`grid ${results.length === 3 ? "grid-cols-4" : "grid-cols-3"} py-2 border-t border-slate-700 text-xs bg-slate-800/40`}>
       <span className="text-slate-300 font-medium">
-        {algorithm==="RSA" ? "Encrypt" : "Sign"}
+        Encrypt
       </span>
 
       {results.map((r)=>(
@@ -304,7 +351,7 @@ export default function EncryptionDecryptionPage() {
     {/* Decrypt / Verify */}
     <div className={`grid ${results.length === 3 ? "grid-cols-4" : "grid-cols-3"} py-2 border-t border-slate-700 text-xs`}>
       <span className="text-slate-300 font-medium">
-        {algorithm==="RSA" ? "Decrypt" : "Verify"}
+        Decrypt
       </span>
 
       {results.map((r)=>(
