@@ -332,66 +332,120 @@ export default function PerformanceChartPage() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={500}>
-              <LineChart data={graphData}>
-                <CartesianGrid
-                  stroke="#334155"
-                  strokeDasharray="3 3"
-                />
+  <LineChart data={graphData}>
+    
+    <CartesianGrid
+      stroke="#334155"
+      strokeDasharray="3 3"
+    />
 
-                <XAxis
-                  dataKey="key"
-                  stroke="#94a3b8"
-                />
+    {/* X Axis */}
+    <XAxis
+      dataKey="key"
+      stroke="#94a3b8"
+      label={{
+        value:
+          selectedAlgo === "RSA"
+            ? "RSA Key Size (bits)"
+            : "ECC Curves",
+        position: "insideBottom",
+        offset: -5,
+        fill: "#94a3b8"
+      }}
+    />
 
-                <YAxis
-                  stroke="#94a3b8"
-                />
+    {/* LEFT Y AXIS → Key Generation */}
+    <YAxis
+      yAxisId="left"
+      stroke="#38bdf8"
+      label={{
+        value: "Key Generation Time (ms)",
+        angle: -90,
+        position: "insideLeft",
+        fill: "#38bdf8"
+      }}
+    />
 
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0f172a",
-                    border: "1px solid #334155"
-                  }}
-                />
+    {/* RIGHT Y AXIS → Other Operations */}
+    <YAxis
+      yAxisId="right"
+      orientation="right"
+      stroke="#22c55e"
+      label={{
+        value: "Operation Time (ms)",
+        angle: 90,
+        position: "insideRight",
+        fill: "#22c55e"
+      }}
+    />
 
-                <Legend />
+    <Tooltip
+      contentStyle={{
+        backgroundColor: "#0f172a",
+        border: "1px solid #334155",
+        borderRadius: "12px"
+      }}
+    />
 
-                <Line
-                  dataKey="keyGen"
-                  stroke="#38bdf8"
-                  strokeWidth={3}
-                  name="Key Generation"
-                />
+    <Legend />
 
-                <Line
-                  dataKey="encrypt"
-                  stroke="#22c55e"
-                  strokeWidth={3}
-                  name="Encryption"
-                />
+    {/* KEY GENERATION */}
+    <Line
+      yAxisId="left"
+      type="monotone"
+      dataKey="keyGen"
+      stroke="#38bdf8"
+      strokeWidth={4}
+      name="Key Generation"
+      dot={{ r: 5 }}
+    />
 
-                <Line
-                  dataKey="decrypt"
-                  stroke="#f59e0b"
-                  strokeWidth={3}
-                  name="Decryption"
-                />
+    {/* Encryption */}
+    <Line
+      yAxisId="right"
+      type="monotone"
+      dataKey="encrypt"
+      stroke="#22c55e"
+      strokeWidth={3}
+      name="Encryption"
+      dot={{ r: 4 }}
+    />
 
-                <Line
-                  dataKey="sign"
-                  stroke="#ef4444"
-                  strokeWidth={3}
-                  name="Digital Signature"
-                />
+    {/* Decryption */}
+    <Line
+      yAxisId="right"
+      type="monotone"
+      dataKey="decrypt"
+      stroke="#f59e0b"
+      strokeWidth={3}
+      name="Decryption"
+      dot={{ r: 4 }}
+    />
 
-                <Line
-                  dataKey="verify"
-                  stroke="#a855f7"
-                  strokeWidth={3}
-                  name="Signature Verification"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+    {/* Signature */}
+    <Line
+      yAxisId="right"
+      type="monotone"
+      dataKey="sign"
+      stroke="#ef4444"
+      strokeWidth={3}
+      name="Digital Signature"
+      dot={{ r: 4 }}
+    />
+
+    {/* Verification */}
+    <Line
+      yAxisId="right"
+      type="monotone"
+      dataKey="verify"
+      stroke="#a855f7"
+      strokeWidth={3}
+      name="Signature Verification"
+      dot={{ r: 4 }}
+    />
+    
+  </LineChart>
+</ResponsiveContainer>
           )}
         </div>
       </div>
