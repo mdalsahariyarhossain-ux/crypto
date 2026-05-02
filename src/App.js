@@ -6,9 +6,10 @@ import HomeOptions from "./components/HomeOptions";
 import AlgorithmUseCases from "./components/AlgorithmUseCases";
 import AlgorithmComparison from "./components/AlgorithmComparison";
 import KeyGeneratorPage from "./pages/KeyGeneratorPage";
-import PerformanceChartPage from "./pages/PerformanceChartPage";
 import ComparisonPage from "./pages/ComparisonPage";
 import EncryptionDecryptionPage from "./pages/EncryptionDecryptionPage";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+
 
 function App() {
   return (
@@ -36,10 +37,10 @@ function App() {
 
           {/* INDIVIDUAL PAGES */}
           <Route path="/key-generator" element={<KeyGeneratorPage />} />
-          <Route path="/graph" element={<PerformanceChartPage />} />
           <Route path="/benchmark" element={<ComparisonPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
           <Route path="/Encryption-Decryption" element={ <EncryptionDecryptionPage />} />
+          <Route path="/graph" element={<AnalyticsDashboard />} />
         </Routes>
 
         <footer className="text-xs text-center text-slate-400 mt-4">

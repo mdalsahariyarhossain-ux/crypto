@@ -15,8 +15,7 @@ const RSA_KEYS = [1024, 2048, 3072];
 const ECC_KEYS = ["P-256", "P-384"];
 const RUNS = 30;
 
-export default function PerformanceChartPage() {
-  const [selectedAlgo, setSelectedAlgo] = useState("RSA");
+export default function PerformanceChartPage({ selectedAlgo }) {
   const [graphData, setGraphData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -174,11 +173,6 @@ export default function PerformanceChartPage() {
             item.decrypt += performance.now() - decStart;
           }
 
-
-          /* =========================
-             SIGN / VERIFY
-          ========================== */
-
           let signKeyPair;
 
           if (selectedAlgo === "RSA") {
@@ -279,46 +273,19 @@ export default function PerformanceChartPage() {
 
 
   return (
-    <div className="min-h-screen bg-[#06142d] text-white p-6">
-
-      <div className="max-w-7xl mx-auto bg-slate-900/70 border border-slate-700 rounded-2xl p-6">
+      <div className="max-w-7xl mx-auto rounded-2xl">
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
 
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-2xl font-bold mb-2">
               {selectedAlgo} Performance Analysis
             </h1>
 
-            <p className="text-slate-400 mt-2">
-              Average execution time from {RUNS} benchmark runs
+            <p className="text-slate-400 mb-6">
+              Average execution time from {RUNS} times runs
             </p>
-          </div>
-
-          {/* Toggle */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setSelectedAlgo("RSA")}
-              className={`px-5 py-2 rounded-xl ${
-                selectedAlgo === "RSA"
-                  ? "bg-sky-500"
-                  : "bg-slate-800"
-              }`}
-            >
-              RSA
-            </button>
-
-            <button
-              onClick={() => setSelectedAlgo("ECC")}
-              className={`px-5 py-2 rounded-xl ${
-                selectedAlgo === "ECC"
-                  ? "bg-green-500"
-                  : "bg-slate-800"
-              }`}
-            >
-              ECC
-            </button>
           </div>
         </div>
 
@@ -449,6 +416,5 @@ export default function PerformanceChartPage() {
           )}
         </div>
       </div>
-    </div>
   );
 }

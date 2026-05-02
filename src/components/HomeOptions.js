@@ -22,7 +22,7 @@ function HomeOptions() {
     },
     {
       path: "/graph",
-      title: "Performance Charts",
+      title: "Analytics Dashboard",
       emoji: "📈",
       description:
         "Analyze security level and key sizes to estimate cryptographic strength.",
