@@ -21,7 +21,7 @@ function HomeOptions() {
     },
     {
       path: "/Encryption-Decryption",
-      title: "Encryption Benchmark",
+      title: "Encryption Decryption Run",
       emoji: "🔐",
       description:
         "Compare RSA and ECC performance by measuring average encryption and decryption times across 30 test runs.",
