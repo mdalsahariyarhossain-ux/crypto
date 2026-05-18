@@ -16,7 +16,7 @@ function App() {
     <div className="bg-slate-900 text-slate-100 min-h-screen">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Header (darkMode removed from header props too) */}
+        {/* Header */}
         <Header />
 
         <Routes>

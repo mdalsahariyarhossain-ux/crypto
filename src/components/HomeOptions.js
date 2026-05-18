@@ -1,4 +1,3 @@
-// src/components/HomeOptions.js
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -21,6 +20,14 @@ function HomeOptions() {
       cta: "Crypto Run"
     },
     {
+      path: "/Encryption-Decryption",
+      title: "Encryption Benchmark",
+      emoji: "🔐",
+      description:
+        "Compare RSA and ECC performance by measuring average encryption and decryption times across 30 test runs.",
+      cta: "View Performance Graphs"
+    },
+    {
       path: "/graph",
       title: "Analytics Dashboard",
       emoji: "📈",
@@ -35,12 +42,12 @@ function HomeOptions() {
       id="home-options"
       className="
         relative
-        grid md:grid-cols-3 gap-5
+        grid md:grid-cols-4 gap-3
         bg-gradient-to-br from-slate-800/70 to-slate-900/70
         border border-slate-700
-        rounded-2xl
-        p-5
-        shadow-xl shadow-slate-900/50
+        rounded-3xl
+        p-4
+        shadow-2xl shadow-slate-900/50
         overflow-hidden
       "
     >
@@ -57,7 +64,7 @@ function HomeOptions() {
             rounded-xl
             border border-slate-700
             bg-slate-900/80
-            px-4 py-4
+            px-2 py-2
             transition-all duration-300
             hover:-translate-y-1
             hover:border-sky-400/70
