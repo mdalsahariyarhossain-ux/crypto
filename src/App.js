@@ -8,7 +8,8 @@ import AlgorithmComparison from "./components/AlgorithmComparison";
 import KeyGeneratorPage from "./pages/KeyGeneratorPage";
 import PerformanceChartPage from "./pages/PerformanceChartPage";
 import ComparisonPage from "./pages/ComparisonPage";
-import RsaEccBenchmarkPanel from "./components/RsaEccBenchmarkPanel";
+import EncryptionDecryptionPage from "./pages/encryptionDecryptionPage";
+
 
 function App() {
   return (
@@ -37,9 +38,9 @@ function App() {
           {/* INDIVIDUAL PAGES */}
           <Route path="/key-generator" element={<KeyGeneratorPage />} />
           <Route path="/graph" element={<PerformanceChartPage />} />
-          <Route path="/comparison" element={<ComparisonPage />} />
+          <Route path="/benchmark" element={<ComparisonPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
-          <Route path="/benchmark" element={<RsaEccBenchmarkPanel />} />
+          <Route path="/encryption-Decryption" element={<EncryptionDecryptionPage />} />
         </Routes>
 
         <footer className="text-xs text-center text-slate-400 mt-4">
