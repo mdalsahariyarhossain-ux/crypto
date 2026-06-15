@@ -1,4 +1,3 @@
-// src/components/AlgorithmUseCases.js
 import React from "react";
 
 function AlgorithmUseCases() {

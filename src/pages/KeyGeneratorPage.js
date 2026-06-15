@@ -34,7 +34,7 @@ async function generateECC(namedCurve) {
   };
 }
 
-function KeyGenerationPanel() {
+function KeyGenerationPage() {
   const [algo, setAlgo] = useState("RSA");
   const [rsaBits, setRsaBits] = useState(2048);
   const [eccCurve, setEccCurve] = useState("P-256");
@@ -232,4 +232,4 @@ function KeyGenerationPanel() {
   );
 }
 
-export default KeyGenerationPanel;
+export default KeyGenerationPage;

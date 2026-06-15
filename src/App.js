@@ -6,17 +6,17 @@ import HomeOptions from "./components/HomeOptions";
 import AlgorithmUseCases from "./components/AlgorithmUseCases";
 import AlgorithmComparison from "./components/AlgorithmComparison";
 import KeyGeneratorPage from "./pages/KeyGeneratorPage";
-import PerformanceChartPage from "./pages/PerformanceChartPage";
 import ComparisonPage from "./pages/ComparisonPage";
-import EncryptionDecryptionPage from "./pages/encryptionDecryptionPage";
-
+import EncryptionDecryptionPage from "./pages/EncryptionDecryptionPage";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import PerformanceChartPage from "./pages/PerformanceChartPage";
 
 function App() {
   return (
     <div className="bg-slate-900 text-slate-100 min-h-screen">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Header (darkMode removed from header props too) */}
+        {/* Header */}
         <Header />
 
         <Routes>
@@ -40,7 +40,10 @@ function App() {
           <Route path="/graph" element={<PerformanceChartPage />} />
           <Route path="/benchmark" element={<ComparisonPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
-          <Route path="/encryption-Decryption" element={<EncryptionDecryptionPage />} />
+          <Route path="/benchmark" element={<ComparisonPage />} />
+          <Route path="/use-cases" element={<AlgorithmUseCases />} />
+          <Route path="/Encryption-Decryption" element={ <EncryptionDecryptionPage />} />
+          <Route path="/graph" element={<AnalyticsDashboard />} />
         </Routes>
 
         <footer className="text-xs text-center text-slate-400 mt-4">
