@@ -8,15 +8,15 @@ import AlgorithmComparison from "./components/AlgorithmComparison";
 import KeyGeneratorPage from "./pages/KeyGeneratorPage";
 import ComparisonPage from "./pages/ComparisonPage";
 import EncryptionDecryptionPage from "./pages/EncryptionDecryptionPage";
+import ToolkitPage from "./pages/ToolkitPage";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
-import PerformanceChartPage from "./pages/PerformanceChartPage";
 
 function App() {
   return (
     <div className="bg-slate-900 text-slate-100 min-h-screen">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Header */}
+        {/* Header (darkMode removed from header props too) */}
         <Header />
 
         <Routes>
@@ -37,13 +37,11 @@ function App() {
 
           {/* INDIVIDUAL PAGES */}
           <Route path="/key-generator" element={<KeyGeneratorPage />} />
-          <Route path="/graph" element={<PerformanceChartPage />} />
-          <Route path="/benchmark" element={<ComparisonPage />} />
-          <Route path="/use-cases" element={<AlgorithmUseCases />} />
+          <Route path="/graph" element={<AnalyticsDashboard />} />
           <Route path="/benchmark" element={<ComparisonPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
           <Route path="/Encryption-Decryption" element={ <EncryptionDecryptionPage />} />
-          <Route path="/graph" element={<AnalyticsDashboard />} />
+          <Route path="/Toolkit" element={<ToolkitPage />} />
         </Routes>
 
         <footer className="text-xs text-center text-slate-400 mt-4">
