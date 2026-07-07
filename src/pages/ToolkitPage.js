@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -79,68 +78,97 @@ function Btn({ onClick, primary, disabled, children, className = "" }) {
 
 // ── TAB 1: Encrypt / Decrypt ──────────────────────────────────────────────────
 
+const RSA_KEY_SIZES = [1024, 2048, 3072];
+const ECC_CURVES    = ["P-256", "P-384"];
+
+const ALGO_META = {
+  RSA: {
+    1024: { sec: "80 bit",  spd: "Fast",   note: "Legacy — not recommended for new systems" },
+    2048: { sec: "112 bit", spd: "Medium", note: "Current standard — widely used" },
+    3072: { sec: "128 bit", spd: "Slow",   note: "High security — future-proof" },
+  },
+  ECC: {
+    "P-256": { sec: "128 bit", spd: "Fast",        note: "Standard curve — used in TLS, Apple, Google" },
+    "P-384": { sec: "192 bit", spd: "Medium-fast",  note: "High security — used in NSA Suite B" },
+  },
+};
+
 function EncryptTab() {
-  const [algo, setAlgo] = useState("RSA");
+  const [algo, setAlgo]           = useState("RSA");
+  const [rsaSize, setRsaSize]     = useState(2048);
+  const [eccCurve, setEccCurve]   = useState("P-256");
   const [plaintext, setPlaintext] = useState("");
   const [ciphertext, setCiphertext] = useState("");
-  const [pubKey, setPubKey] = useState("");
-  const [privKey, setPrivKey] = useState("");
-  const [status, setStatus] = useState("");
+  const [pubKey, setPubKey]       = useState("");
+  const [privKey, setPrivKey]     = useState("");
+  const [status, setStatus]       = useState("");
 
-  const rsaKeyPairRef = useRef(null);
-  const aesKeyRef = useRef(null);
+  const keyPairRef    = useRef(null);
+  const aesKeyRef     = useRef(null);
   const lastCipherRef = useRef(null);
+  // track which key was last generated so decrypt uses right one
+  const lastAlgoRef   = useRef(null);
+  const lastSizeRef   = useRef(null);
 
-  const algoStats = {
-    RSA: { key: "2048 bit", sec: "112 bit", spd: "Medium" },
-    ECC: { key: "256 bit", sec: "128 bit", spd: "Fast" },
-  };
+  const currentKey  = algo === "RSA" ? rsaSize : eccCurve;
+  const meta        = ALGO_META[algo][currentKey];
 
   async function genKeys() {
     setStatus("Generating keys…");
+    setPubKey(""); setPrivKey("");
+    keyPairRef.current = null; aesKeyRef.current = null;
     try {
       if (algo === "RSA") {
         const kp = await crypto.subtle.generateKey(
-          { name: "RSA-OAEP", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+          { name: "RSA-OAEP", modulusLength: rsaSize, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
           true, ["encrypt", "decrypt"]
         );
-        rsaKeyPairRef.current = kp;
-        const pub = await crypto.subtle.exportKey("spki", kp.publicKey);
+        keyPairRef.current = kp;
+        lastAlgoRef.current = "RSA"; lastSizeRef.current = rsaSize;
+        const pub  = await crypto.subtle.exportKey("spki", kp.publicKey);
         const priv = await crypto.subtle.exportKey("pkcs8", kp.privateKey);
-        setPubKey("-----BEGIN PUBLIC KEY-----\n" + ab2b64(pub) + "\n-----END PUBLIC KEY-----");
+        setPubKey("-----BEGIN PUBLIC KEY-----\n"  + ab2b64(pub)  + "\n-----END PUBLIC KEY-----");
         setPrivKey("-----BEGIN PRIVATE KEY-----\n" + ab2b64(priv) + "\n-----END PRIVATE KEY-----");
-        setStatus("✅ RSA-2048 key pair generated.");
+        setStatus(`✅ RSA-${rsaSize} key pair generated.`);
       } else {
-        const kp = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]);
-        const pub = await crypto.subtle.exportKey("spki", kp.publicKey);
+        const kp = await crypto.subtle.generateKey(
+          { name: "ECDH", namedCurve: eccCurve }, true, ["deriveKey"]
+        );
+        keyPairRef.current = kp;
+        lastAlgoRef.current = "ECC"; lastSizeRef.current = eccCurve;
+        aesKeyRef.current = await crypto.subtle.generateKey(
+          { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]
+        );
+        const pub  = await crypto.subtle.exportKey("spki", kp.publicKey);
         const priv = await crypto.subtle.exportKey("pkcs8", kp.privateKey);
-        setPubKey("-----BEGIN PUBLIC KEY-----\n" + ab2b64(pub) + "\n-----END PUBLIC KEY-----");
+        setPubKey("-----BEGIN PUBLIC KEY-----\n"  + ab2b64(pub)  + "\n-----END PUBLIC KEY-----");
         setPrivKey("-----BEGIN PRIVATE KEY-----\n" + ab2b64(priv) + "\n-----END PRIVATE KEY-----");
-        aesKeyRef.current = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
-        setStatus("✅ ECC P-256 key pair generated.");
+        setStatus(`✅ ECC ${eccCurve} key pair generated.`);
       }
     } catch (e) { setStatus("❌ Key generation failed: " + e.message); }
   }
 
   async function doEncrypt() {
     if (!plaintext.trim()) { setStatus("Please enter a message."); return; }
+    // auto-generate keys if none or algo/size changed
+    if (!keyPairRef.current || lastAlgoRef.current !== algo || lastSizeRef.current !== currentKey) {
+      await genKeys();
+    }
     const enc = new TextEncoder();
     try {
       if (algo === "RSA") {
-        if (!rsaKeyPairRef.current) await genKeys();
-        const ct = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, rsaKeyPairRef.current.publicKey, enc.encode(plaintext));
+        const ct = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, keyPairRef.current.publicKey, enc.encode(plaintext));
         lastCipherRef.current = ct;
         setCiphertext(ab2b64(ct));
-        setStatus("✅ Encrypted with RSA-OAEP.");
+        setStatus(`✅ Encrypted with RSA-${rsaSize}-OAEP.`);
       } else {
-        if (!aesKeyRef.current) await genKeys();
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKeyRef.current, enc.encode(plaintext));
         const combined = new Uint8Array(iv.length + ct.byteLength);
         combined.set(iv); combined.set(new Uint8Array(ct), iv.length);
         lastCipherRef.current = combined.buffer;
         setCiphertext(ab2b64(combined.buffer));
-        setStatus("✅ Encrypted with ECDH + AES-GCM.");
+        setStatus(`✅ Encrypted with ECC ${eccCurve} + AES-GCM.`);
       }
     } catch (e) { setStatus("❌ Encryption failed: " + e.message); }
   }
@@ -149,8 +177,8 @@ function EncryptTab() {
     if (!lastCipherRef.current) { setStatus("Encrypt a message first."); return; }
     try {
       let plain;
-      if (algo === "RSA") {
-        plain = await crypto.subtle.decrypt({ name: "RSA-OAEP" }, rsaKeyPairRef.current.privateKey, lastCipherRef.current);
+      if (lastAlgoRef.current === "RSA") {
+        plain = await crypto.subtle.decrypt({ name: "RSA-OAEP" }, keyPairRef.current.privateKey, lastCipherRef.current);
       } else {
         const data = new Uint8Array(lastCipherRef.current);
         plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: data.slice(0, 12) }, aesKeyRef.current, data.slice(12));
@@ -160,51 +188,62 @@ function EncryptTab() {
     } catch (e) { setStatus("❌ Decryption failed: " + e.message); }
   }
 
-  const s = algoStats[algo];
-
   return (
     <div className="space-y-5">
-      {/* Algorithm picker */}
+
+      {/* Step 1 — Algorithm */}
       <div>
-        <SectionLabel>Algorithm</SectionLabel>
+        <SectionLabel>Step 1 — Choose Algorithm</SectionLabel>
         <div className="flex gap-3">
           {["RSA", "ECC"].map(a => (
-            <button
-              key={a}
-              onClick={() => setAlgo(a)}
-              className={`
-                px-6 py-2 rounded-xl text-sm font-bold border transition-all
+            <button key={a} onClick={() => { setAlgo(a); keyPairRef.current = null; setCiphertext(""); setStatus(""); }}
+              className={`px-8 py-2 rounded-xl text-sm font-bold border transition-all
                 ${algo === a
                   ? "bg-gradient-to-r from-cyan-500 to-teal-500 border-transparent text-slate-900"
-                  : "bg-slate-800/60 border-slate-600 text-slate-300 hover:border-cyan-400/50"}
-              `}
-            >
+                  : "bg-slate-800/60 border-slate-600 text-slate-300 hover:border-cyan-400/50"}`}>
               {a}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="flex gap-3">
-        <StatCard label="Key size" value={s.key} />
-        <StatCard label="Security level" value={s.sec} />
-        <StatCard label="Speed" value={s.spd} />
+      {/* Step 2 — Key size */}
+      <div>
+        <SectionLabel>Step 2 — Choose Key Size</SectionLabel>
+        <div className="flex gap-2 flex-wrap">
+          {(algo === "RSA" ? RSA_KEY_SIZES : ECC_CURVES).map(k => (
+            <button key={k}
+              onClick={() => { algo === "RSA" ? setRsaSize(k) : setEccCurve(k); keyPairRef.current = null; setCiphertext(""); setStatus(""); }}
+              className={`px-5 py-2 rounded-xl text-sm font-bold border transition-all
+                ${currentKey === k
+                  ? algo === "RSA"
+                    ? "bg-sky-500 border-transparent text-white"
+                    : "bg-green-500 border-transparent text-white"
+                  : "bg-slate-800/60 border-slate-600 text-slate-300 hover:border-slate-400"}`}>
+              {algo === "RSA" ? `${k} bit` : k}
+            </button>
+          ))}
+        </div>
+        {/* Info note about selected key */}
+        <p className="text-xs text-slate-500 mt-2">ℹ️ {meta.note}</p>
       </div>
 
-      {/* Encrypt / Decrypt boxes */}
+      {/* Stats */}
+      <div className="flex gap-3">
+        <StatCard label="Key size"       value={algo === "RSA" ? `${rsaSize} bit` : eccCurve} />
+        <StatCard label="Security level" value={meta.sec} />
+        <StatCard label="Speed"          value={meta.spd} />
+      </div>
+
+      {/* Step 3 — Encrypt / Decrypt */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <SectionLabel>Plaintext message</SectionLabel>
-          <textarea
-            rows={6}
-            value={plaintext}
-            onChange={e => setPlaintext(e.target.value)}
+          <SectionLabel>Step 3 — Plaintext message</SectionLabel>
+          <textarea rows={6} value={plaintext} onChange={e => setPlaintext(e.target.value)}
             placeholder="Type your secret message here…"
             className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5
               text-sm text-slate-200 placeholder-slate-500 resize-y
-              focus:outline-none focus:border-cyan-500/60 transition"
-          />
+              focus:outline-none focus:border-cyan-500/60 transition" />
           <div className="flex gap-2">
             <Btn primary onClick={doEncrypt}>🔒 Encrypt</Btn>
             <Btn onClick={genKeys}>🔑 Generate keys</Btn>
@@ -215,7 +254,7 @@ function EncryptTab() {
           <OutputBox>{ciphertext || "Encrypted output will appear here…"}</OutputBox>
           <div className="flex gap-2">
             <Btn onClick={doDecrypt}>🔓 Decrypt</Btn>
-            <Btn onClick={() => ciphertext && navigator.clipboard.writeText(ciphertext).then(() => setStatus("Copied!"))}>
+            <Btn onClick={() => ciphertext && navigator.clipboard.writeText(ciphertext).then(() => setStatus("📋 Copied!"))}>
               📋 Copy
             </Btn>
           </div>
@@ -225,7 +264,7 @@ function EncryptTab() {
       {/* Keys */}
       <div>
         <div className="border-t border-slate-700 my-2" />
-        <SectionLabel>Keys</SectionLabel>
+        <SectionLabel>Generated Keys</SectionLabel>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-slate-500 mb-1">Public key (share this)</p>
@@ -261,13 +300,10 @@ function AIAdvisorTab() {
     if (!usecase.trim()) { setResponse("Please describe your use case above."); return; }
     setLoading(true); setResponse("");
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("http://localhost:4000/api/ai-advisor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: `You are a cryptography expert advisor. The user is working on a project comparing RSA and ECC algorithms. Given a use case, recommend either RSA or ECC and explain in 3-4 short paragraphs: 1) Your recommendation and why, 2) Security properties that matter for this use case, 3) Key practical implementation steps. Be specific, educational, and keep it simple enough for a student to understand.`,
           messages: [{ role: "user", content: usecase }],
         }),
       });
@@ -326,140 +362,253 @@ function AIAdvisorTab() {
 // ── TAB 3: File Encryption ────────────────────────────────────────────────────
 
 function FileEncryptTab() {
-  const [file, setFile] = useState(null);
-  const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("");
+  const [algo, setAlgo]         = useState("RSA");
+  const [rsaSize, setRsaSize]   = useState(2048);
+  const [eccCurve, setEccCurve] = useState("P-256");
+  const [file, setFile]         = useState(null);
+  const [status, setStatus]     = useState("");
   const [progress, setProgress] = useState(0);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy]         = useState(false);
   const [dragging, setDragging] = useState(false);
-  const inputRef = useRef();
+  const [keyGenerated, setKeyGenerated] = useState(false);
+
+  const inputRef   = useRef();
+  const keyPairRef = useRef(null);   // RSA key pair
+  const aesKeyRef  = useRef(null);   // ECC session AES key
+  const encMetaRef = useRef(null);   // stores {algo, iv, wrappedKey} for decrypt
+
+  const currentKey = algo === "RSA" ? rsaSize : eccCurve;
+  const meta       = ALGO_META[algo][currentKey];
 
   function handleFile(f) { if (f) { setFile(f); setStatus(""); setProgress(0); } }
 
-  async function animateProgress(end, ms) {
-    const step = (end - progress) / (ms / 50);
-    let cur = progress;
+  function animBar(target) {
     return new Promise(res => {
+      let cur = progress;
       const t = setInterval(() => {
-        cur = Math.min(cur + step, end);
-        setProgress(Math.round(cur));
-        if (cur >= end) { clearInterval(t); res(); }
-      }, 50);
+        cur = Math.min(cur + 5, target);
+        setProgress(cur);
+        if (cur >= target) { clearInterval(t); res(); }
+      }, 40);
     });
   }
 
+  // reset keys when algo/size changes
+  function resetKeys() {
+    keyPairRef.current = null;
+    aesKeyRef.current  = null;
+    encMetaRef.current = null;
+    setKeyGenerated(false);
+    setStatus("");
+  }
+
+  async function generateKeys() {
+    setStatus("Generating keys…");
+    try {
+      if (algo === "RSA") {
+        const kp = await crypto.subtle.generateKey(
+          { name: "RSA-OAEP", modulusLength: rsaSize, publicExponent: new Uint8Array([1,0,1]), hash: "SHA-256" },
+          true, ["encrypt", "decrypt"]
+        );
+        keyPairRef.current = kp;
+      } else {
+        // ECC: generate ECDH pair + ephemeral AES session key
+        const kp = await crypto.subtle.generateKey(
+          { name: "ECDH", namedCurve: eccCurve }, true, ["deriveKey"]
+        );
+        keyPairRef.current = kp;
+        aesKeyRef.current = await crypto.subtle.generateKey(
+          { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]
+        );
+      }
+      setKeyGenerated(true);
+      setStatus(`✅ ${algo === "RSA" ? `RSA-${rsaSize}` : `ECC ${eccCurve}`} keys ready.`);
+    } catch(e) { setStatus("❌ Key generation failed: " + e.message); }
+  }
+
   async function encryptFile() {
-    if (!file || !password) { setStatus("Please select a file and enter a password."); return; }
-    setBusy(true); setStatus("Encrypting…");
+    if (!file) { setStatus("Please select a file first."); return; }
+    if (!keyPairRef.current) { await generateKeys(); }
+    setBusy(true); setStatus("Encrypting file…"); setProgress(0);
     try {
       const buf = await file.arrayBuffer();
-      const salt = crypto.getRandomValues(new Uint8Array(16));
+      await animBar(30);
+
+      // Always encrypt file content with AES-GCM (fast for large files)
+      const fileAesKey = await crypto.subtle.generateKey({ name:"AES-GCM", length:256 }, true, ["encrypt","decrypt"]);
       const iv = crypto.getRandomValues(new Uint8Array(12));
-      const key = await deriveKey(password, salt);
-      await animateProgress(70, 400);
-      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, buf);
-      await animateProgress(100, 200);
-      const out = new Uint8Array(salt.length + iv.length + ct.byteLength);
-      out.set(salt); out.set(iv, 16); out.set(new Uint8Array(ct), 28);
+      const encryptedFile = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, fileAesKey, buf);
+      await animBar(60);
+
+      // Export the AES key and wrap it with RSA or ECC session key
+      const rawAesKey = await crypto.subtle.exportKey("raw", fileAesKey);
+      let wrappedKey;
+      if (algo === "RSA") {
+        wrappedKey = await crypto.subtle.encrypt({ name:"RSA-OAEP" }, keyPairRef.current.publicKey, rawAesKey);
+      } else {
+        const wrapIv = crypto.getRandomValues(new Uint8Array(12));
+        const wrapped = await crypto.subtle.encrypt({ name:"AES-GCM", iv:wrapIv }, aesKeyRef.current, rawAesKey);
+        // prepend wrapIv so we can unwrap later
+        const wk = new Uint8Array(12 + wrapped.byteLength);
+        wk.set(wrapIv); wk.set(new Uint8Array(wrapped), 12);
+        wrappedKey = wk.buffer;
+      }
+      await animBar(90);
+
+      // Pack: [4B wrappedKeyLen][wrappedKey][12B iv][encryptedFile]
+      const wkArr = new Uint8Array(wrappedKey);
+      const out   = new Uint8Array(4 + wkArr.length + 12 + encryptedFile.byteLength);
+      new DataView(out.buffer).setUint32(0, wkArr.length);
+      out.set(wkArr, 4);
+      out.set(iv, 4 + wkArr.length);
+      out.set(new Uint8Array(encryptedFile), 4 + wkArr.length + 12);
+
       downloadBlob(out, file.name + ".enc");
-      setStatus("✅ Encrypted and downloaded as " + file.name + ".enc");
-    } catch (e) { setStatus("❌ Error: " + e.message); }
+      await animBar(100);
+      setStatus(`✅ Encrypted with ${algo === "RSA" ? `RSA-${rsaSize}` : `ECC ${eccCurve}`} · Downloaded as ${file.name}.enc`);
+    } catch(e) { setStatus("❌ Encryption error: " + e.message); }
     finally { setBusy(false); }
   }
 
   async function decryptFile() {
-    if (!file || !password) { setStatus("Please select a file and enter the password."); return; }
-    setBusy(true); setStatus("Decrypting…");
+    if (!file) { setStatus("Please select the .enc file."); return; }
+    if (!keyPairRef.current) { setStatus("❌ No keys found. Generate keys first, then encrypt a file, then decrypt."); return; }
+    setBusy(true); setStatus("Decrypting file…"); setProgress(0);
     try {
-      const buf = await file.arrayBuffer();
+      const buf  = await file.arrayBuffer();
       const data = new Uint8Array(buf);
-      const key = await deriveKey(password, data.slice(0, 16));
-      await animateProgress(70, 400);
-      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: data.slice(16, 28) }, key, data.slice(28));
-      await animateProgress(100, 200);
-      const name = file.name.endsWith(".enc") ? file.name.slice(0, -4) : "decrypted_" + file.name;
+      await animBar(20);
+
+      // Unpack
+      const wkLen       = new DataView(buf).getUint32(0);
+      const wkArr       = data.slice(4, 4 + wkLen);
+      const iv          = data.slice(4 + wkLen, 4 + wkLen + 12);
+      const encContent  = data.slice(4 + wkLen + 12);
+
+      // Unwrap AES key
+      let rawAesKey;
+      if (algo === "RSA") {
+        rawAesKey = await crypto.subtle.decrypt({ name:"RSA-OAEP" }, keyPairRef.current.privateKey, wkArr);
+      } else {
+        const wrapIv  = wkArr.slice(0, 12);
+        const wrapped = wkArr.slice(12);
+        rawAesKey = await crypto.subtle.decrypt({ name:"AES-GCM", iv:wrapIv }, aesKeyRef.current, wrapped);
+      }
+      await animBar(60);
+
+      const fileAesKey = await crypto.subtle.importKey("raw", rawAesKey, "AES-GCM", false, ["decrypt"]);
+      const plain      = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, fileAesKey, encContent);
+      await animBar(100);
+
+      const name = file.name.endsWith(".enc") ? file.name.slice(0,-4) : "decrypted_" + file.name;
       downloadBlob(new Uint8Array(plain), name);
-      setStatus("✅ Decrypted and downloaded as " + name);
-    } catch (e) { setStatus("❌ Wrong password or corrupted file."); }
+      setStatus("✅ Decrypted successfully · Downloaded as " + name);
+    } catch(e) { setStatus("❌ Decryption failed. Make sure you use the same keys used to encrypt."); }
     finally { setBusy(false); }
   }
 
   return (
-    <div className="space-y-4">
-      {/* Drop zone */}
-      <div
-        onClick={() => inputRef.current.click()}
-        onDragOver={e => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]); }}
-        className={`
-          border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all
-          ${dragging ? "border-cyan-400 bg-slate-800/60" : "border-slate-600 hover:border-cyan-400/50 hover:bg-slate-800/30"}
-        `}
-      >
-        <input type="file" ref={inputRef} className="hidden" onChange={e => handleFile(e.target.files[0])} />
-        <div className="text-3xl mb-2">{file ? "✅" : "📂"}</div>
-        {file ? (
-          <>
-            <p className="font-semibold text-slate-200">{file.name}</p>
-            <p className="text-xs text-slate-400 mt-1">{(file.size / 1024).toFixed(1)} KB · Click to change</p>
-          </>
-        ) : (
-          <>
-            <p className="font-semibold text-slate-300">Drop a file here or click to upload</p>
-            <p className="text-xs text-slate-500 mt-1">Any file type · Encrypted with AES-256-GCM in your browser</p>
-          </>
+    <div className="space-y-5">
+
+      {/* Step 1 — Algorithm */}
+      <div>
+        <SectionLabel>Step 1 — Choose Algorithm</SectionLabel>
+        <div className="flex gap-3">
+          {["RSA","ECC"].map(a => (
+            <button key={a} onClick={() => { setAlgo(a); resetKeys(); }}
+              className={`px-8 py-2 rounded-xl text-sm font-bold border transition-all
+                ${algo === a
+                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 border-transparent text-slate-900"
+                  : "bg-slate-800/60 border-slate-600 text-slate-300 hover:border-cyan-400/50"}`}>
+              {a}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Step 2 — Key size */}
+      <div>
+        <SectionLabel>Step 2 — Choose Key Size</SectionLabel>
+        <div className="flex gap-2 flex-wrap">
+          {(algo === "RSA" ? RSA_KEY_SIZES : ECC_CURVES).map(k => (
+            <button key={k} onClick={() => { algo === "RSA" ? setRsaSize(k) : setEccCurve(k); resetKeys(); }}
+              className={`px-5 py-2 rounded-xl text-sm font-bold border transition-all
+                ${currentKey === k
+                  ? algo === "RSA" ? "bg-sky-500 border-transparent text-white"
+                                   : "bg-green-500 border-transparent text-white"
+                  : "bg-slate-800/60 border-slate-600 text-slate-300 hover:border-slate-400"}`}>
+              {algo === "RSA" ? `${k} bit` : k}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-slate-500 mt-2">ℹ️ {meta.note}</p>
+      </div>
+
+
+
+      {/* Step 3 — Generate keys */}
+      <div>
+        <SectionLabel>Step 3 — Generate Keys</SectionLabel>
+        <Btn primary={!keyGenerated} onClick={generateKeys}>
+          {keyGenerated ? "🔄 Regenerate Keys" : "🔑 Generate Keys"}
+        </Btn>
+        {keyGenerated && (
+          <p className="text-xs text-green-400 mt-2">
+            ✅ {algo === "RSA" ? `RSA-${rsaSize}` : `ECC ${eccCurve}`} keys ready — keep this tab open while encrypting/decrypting
+          </p>
         )}
       </div>
 
+      {/* Step 4 — File drop */}
+      <div>
+        <SectionLabel>Step 4 — Select File</SectionLabel>
+        <div
+          onClick={() => inputRef.current.click()}
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]); }}
+          className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all
+            ${dragging ? "border-cyan-400 bg-slate-800/60" : "border-slate-600 hover:border-cyan-400/50 hover:bg-slate-800/30"}`}
+        >
+          <input type="file" ref={inputRef} className="hidden" onChange={e => handleFile(e.target.files[0])} />
+          <div className="text-3xl mb-2">{file ? "✅" : "📂"}</div>
+          {file ? (
+            <>
+              <p className="font-semibold text-slate-200">{file.name}</p>
+              <p className="text-xs text-slate-400 mt-1">{(file.size/1024).toFixed(1)} KB · Click to change</p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold text-slate-300">Drop a file here or click to upload</p>
+              <p className="text-xs text-slate-500 mt-1">Any file type · Encrypted in your browser · Never uploaded to any server</p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Step 5 — Actions */}
       {file && (
-        <>
-          {/* Stats */}
-          <div className="flex gap-3">
-            <StatCard label="File" value={file.name.length > 14 ? file.name.slice(0,12)+"…" : file.name} />
-            <StatCard label="Size" value={(file.size/1024).toFixed(1)+" KB"} />
-            <StatCard label="Cipher" value="AES-256" />
-          </div>
-
-          {/* Password */}
-          <div>
-            <SectionLabel>Encryption password</SectionLabel>
-            <input
-              type="password"
-              placeholder="Enter a strong password…"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5
-                text-sm text-slate-200 placeholder-slate-500
-                focus:outline-none focus:border-cyan-500/60 transition"
-            />
-            <p className="text-xs text-slate-500 mt-1">Derived via PBKDF2 · Never leaves your browser</p>
-          </div>
-
+        <div>
+          <SectionLabel>Step 5 — Encrypt or Decrypt</SectionLabel>
           <div className="flex gap-3">
             <Btn primary onClick={encryptFile} disabled={busy}>🔒 Encrypt & Download</Btn>
             <Btn onClick={decryptFile} disabled={busy}>🔓 Decrypt & Download</Btn>
           </div>
-
           {busy && (
-            <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full transition-all duration-150"
+            <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mt-3">
+              <div className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full transition-all duration-100"
                 style={{ width: progress + "%" }} />
             </div>
           )}
-        </>
+        </div>
       )}
 
-      {status && <p className="text-sm text-slate-400">{status}</p>}
+      {status && <p className="text-sm text-slate-400 mt-1">{status}</p>}
 
-      <div className="border-t border-slate-700 pt-4">
-        <div className="flex gap-3">
-          <StatCard label="Cipher" value="AES-256" />
-          <StatCard label="Mode" value="GCM" />
-          <StatCard label="Key derivation" value="PBKDF2" />
-          <StatCard label="Processed" value="Client-side" />
-        </div>
-      </div>
+      {/* Simple footer note */}
+      <p className="text-xs text-slate-600 border-t border-slate-800 pt-3">
+        🔐 File is encrypted with AES-256-GCM. The AES key is wrapped with your {algo} key. Everything runs in your browser — nothing is uploaded to any server.
+      </p>
     </div>
   );
 }
@@ -475,44 +624,49 @@ const TABS = [
 export default function CryptoToolkit() {
   const [active, setActive] = useState("encrypt");
 
-return (
-  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold tracking-tight text-white">Crypto Toolkit</h2>
+        <p className="text-sm text-slate-400 mt-1">
+          Real-world cryptography — encrypt messages, get AI recommendations, protect files
+        </p>
+      </div>
 
-    {/* LEFT MENU PANEL - 1/3 */}
-    <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 h-full">
-      <h2 className="text-3xl font-bold text-white mb-4">
-        Crypto Toolkit
-      </h2>
+      {/* Card */}
+      <div className="
+        bg-gradient-to-br from-slate-900/90 to-slate-800/80
+        border border-slate-700
+        rounded-2xl
+        shadow-xl shadow-slate-900/60
+        overflow-hidden
+      ">
+        {/* Tabs */}
+        <div className="flex border-b border-slate-700 bg-slate-900/60">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActive(t.id)}
+              className={`
+                flex-1 py-3 px-2 text-sm font-semibold transition-all
+                ${active === t.id
+                  ? "text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/40"
+                  : "text-slate-400 hover:text-slate-200 border-b-2 border-transparent"}
+              `}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      <p className="text-slate-400 mb-8 leading-relaxed">
-        Real-world cryptography — encrypt messages, get AI recommendations,
-        protect files
-      </p>
-
-      <div className="space-y-4">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setActive(t.id)}
-            className={`w-full py-4 rounded-2xl text-lg font-medium transition-all ${
-              active === t.id
-                ? "bg-sky-500 text-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+        {/* Panel */}
+        <div className="p-6">
+          {active === "encrypt" && <EncryptTab />}
+          {active === "ai"      && <AIAdvisorTab />}
+          {active === "file"    && <FileEncryptTab />}
+        </div>
       </div>
     </div>
-
-    {/* RIGHT CONTENT PANEL - 2/3 */}
-    <div className="lg:col-span-2 bg-slate-900 rounded-2xl p-6 border border-slate-700">
-      {active === "encrypt" && <EncryptTab />}
-      {active === "ai" && <AIAdvisorTab />}
-      {active === "file" && <FileEncryptTab />}
-    </div>
-
-  </div>
-);
+  );
 }
