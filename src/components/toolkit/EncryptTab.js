@@ -84,42 +84,56 @@ export default function EncryptTab() {
   }
 
   async function doDecrypt() {
-  if (!ciphertext.trim()) {
-    setStatus("Please enter ciphertext.");
-    return;
-  }
-
-  try {
-    const binary = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
-
-    let plain;
-
-    if (lastAlgoRef.current === "RSA") {
-      plain = await crypto.subtle.decrypt(
-        { name: "RSA-OAEP" },
-        keyPairRef.current.privateKey,
-        binary
-      );
-    } else {
-      const iv = binary.slice(0, 12);
-      const encrypted = binary.slice(12);
-
-      plain = await crypto.subtle.decrypt(
-        {
-          name: "AES-GCM",
-          iv,
-        },
-        aesKeyRef.current,
-        encrypted
-      );
+    if (!ciphertext.trim()) {
+      setStatus("Please enter ciphertext.");
+      return;
     }
 
-    setDecryptedText(new TextDecoder().decode(plain));
-    setStatus("✅ Decrypted successfully.");
-  } catch (e) {
-    setStatus("❌ Invalid ciphertext or wrong key.");
+    // Guard: no key generated yet, or key was cleared by switching algo/size
+    if (!keyPairRef.current && !aesKeyRef.current) {
+      setStatus("❌ No key available. Click Encrypt first — decryption only works with the key generated in this session.");
+      return;
+    }
+
+    try {
+      const binary = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
+
+      let plain;
+
+      if (lastAlgoRef.current === "RSA") {
+        if (!keyPairRef.current?.privateKey) {
+          setStatus("❌ RSA private key missing. Click Encrypt to regenerate keys.");
+          return;
+        }
+        plain = await crypto.subtle.decrypt(
+          { name: "RSA-OAEP" },
+          keyPairRef.current.privateKey,
+          binary
+        );
+      } else {
+        if (!aesKeyRef.current) {
+          setStatus("❌ AES key missing. Click Encrypt to regenerate keys.");
+          return;
+        }
+        const iv = binary.slice(0, 12);
+        const encrypted = binary.slice(12);
+
+        plain = await crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv,
+          },
+          aesKeyRef.current,
+          encrypted
+        );
+      }
+
+      setDecryptedText(new TextDecoder().decode(plain));
+      setStatus("✅ Decrypted successfully.");
+    } catch (e) {
+      setStatus("❌ Decryption failed: " + e.message + " — ciphertext may not match the current session's key.");
+    }
   }
-}
 
   return (
     <div className="space-y-5">
@@ -129,7 +143,7 @@ export default function EncryptTab() {
         <SectionLabel>Step 1 — Choose Algorithm</SectionLabel>
         <div className="flex gap-3">
           {["RSA", "ECC"].map(a => (
-            <button key={a} onClick={() => { setAlgo(a); keyPairRef.current = null; setCiphertext(""); setStatus(""); }}
+            <button key={a} onClick={() => { setAlgo(a); keyPairRef.current = null; aesKeyRef.current = null; setCiphertext(""); setDecryptedText(""); setStatus(""); }}
               className={`px-8 py-2 rounded-xl text-sm font-bold border transition-all
                 ${algo === a
                   ? "bg-gradient-to-r from-cyan-500 to-teal-500 border-transparent text-slate-900"
@@ -146,7 +160,7 @@ export default function EncryptTab() {
         <div className="flex gap-2 flex-wrap">
           {(algo === "RSA" ? RSA_KEY_SIZES : ECC_CURVES).map(k => (
             <button key={k}
-              onClick={() => { algo === "RSA" ? setRsaSize(k) : setEccCurve(k); keyPairRef.current = null; setCiphertext(""); setStatus(""); }}
+              onClick={() => { algo === "RSA" ? setRsaSize(k) : setEccCurve(k); keyPairRef.current = null; aesKeyRef.current = null; setCiphertext(""); setDecryptedText(""); setStatus(""); }}
               className={`px-5 py-2 rounded-xl text-sm font-bold border transition-all
                 ${currentKey === k
                   ? algo === "RSA"
@@ -171,68 +185,68 @@ export default function EncryptTab() {
       {/* Step 3 — Encrypt / Decrypt */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-  {/* Plain Text */}
-  <div className="space-y-3">
+        {/* Plain Text */}
+        <div className="space-y-3">
 
-    <SectionLabel>Plain Text</SectionLabel>
+          <SectionLabel>Plain Text</SectionLabel>
 
-    <textarea
-      rows={6}
-      value={plaintext}
-      onChange={(e)=>setPlaintext(e.target.value)}
-      placeholder="Enter plain text..."
-      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3"
-    />
+          <textarea
+            rows={6}
+            value={plaintext}
+            onChange={(e)=>setPlaintext(e.target.value)}
+            placeholder="Enter plain text..."
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3"
+          />
 
-    <Btn primary onClick={doEncrypt}>
-      🔒 Encrypt
-    </Btn>
+          <Btn primary onClick={doEncrypt}>
+            🔒 Encrypt
+          </Btn>
 
-  </div>
+        </div>
 
-  {/* Cipher Text */}
-  <div className="space-y-3">
+        {/* Cipher Text */}
+        <div className="space-y-3">
 
-    <SectionLabel>Cipher Text</SectionLabel>
+          <SectionLabel>Cipher Text</SectionLabel>
 
-    <textarea
-      rows={6}
-      value={ciphertext}
-      onChange={(e)=>setCiphertext(e.target.value)}
-      placeholder="Paste ciphertext here..."
-      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 font-mono text-xs"
-    />
+          <textarea
+            rows={6}
+            value={ciphertext}
+            onChange={(e)=>setCiphertext(e.target.value)}
+            placeholder="Paste ciphertext here..."
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 font-mono text-xs"
+          />
 
-    <div className="flex gap-2">
+          <div className="flex gap-2">
 
-      <Btn onClick={doDecrypt}>
-        🔓 Decrypt
-      </Btn>
+            <Btn onClick={doDecrypt}>
+              🔓 Decrypt
+            </Btn>
 
-      <Btn
-        onClick={()=>{
-          navigator.clipboard.writeText(ciphertext);
-          setStatus("📋 Copied");
-        }}
-      >
-        📋 Copy
-      </Btn>
+            <Btn
+              onClick={()=>{
+                navigator.clipboard.writeText(ciphertext);
+                setStatus("📋 Copied");
+              }}
+            >
+              📋 Copy
+            </Btn>
 
-    </div>
+          </div>
 
-  </div>
+        </div>
 
-</div>
+      </div>
 
-<div className="mt-6">
+      <div className="mt-6">
 
-  <SectionLabel>Decrypted Plain Text</SectionLabel>
+        <SectionLabel>Decrypted Plain Text</SectionLabel>
 
-  <OutputBox>
-    {decryptedText || "Decrypted text will appear here..."}
-  </OutputBox>
+        <OutputBox>
+          {decryptedText || "Decrypted text will appear here..."}
+        </OutputBox>
 
-</div>
+      </div>
 
       {/* Keys */}
       <div>
@@ -254,4 +268,3 @@ export default function EncryptTab() {
     </div>
   );
 }
-
