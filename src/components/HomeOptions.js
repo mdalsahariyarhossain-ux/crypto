@@ -28,12 +28,12 @@ function HomeOptions() {
       cta: "View Performance Graphs"
     },
     {
-      path: "/graph",
-      title: "Analytics Dashboard",
-      emoji: "📈",
+      path: "/Toolkit",
+      title: "Toolkit Dashboard",
+      emoji: "🛠️",
       description:
-        "Analyze security level and key sizes to estimate cryptographic strength.",
-      cta: "Open graphs"
+        "Real-world cryptography — encrypt messages, get AI recommendations, protect files.",
+      cta: "Open Dashboard"
     }
   ];
 
