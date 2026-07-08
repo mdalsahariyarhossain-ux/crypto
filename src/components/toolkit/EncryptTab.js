@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import {Btn,OutputBox,SectionLabel,StatCard} from "./UIComponents";
+import {Btn,OutputBox,SectionLabel} from "./UIComponents";
 import {ab2b64,RSA_KEY_SIZES,ECC_CURVES,ALGO_META} from "./cryptoUtils";
 
 export default function EncryptTab() {
@@ -175,12 +175,6 @@ export default function EncryptTab() {
         <p className="text-xs text-slate-500 mt-2">ℹ️ {meta.note}</p>
       </div>
 
-      {/* Stats */}
-      <div className="flex gap-3">
-        <StatCard label="Key size"       value={algo === "RSA" ? `${rsaSize} bit` : eccCurve} />
-        <StatCard label="Security level" value={meta.sec} />
-        <StatCard label="Speed"          value={meta.spd} />
-      </div>
 
       {/* Step 3 — Encrypt / Decrypt */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
