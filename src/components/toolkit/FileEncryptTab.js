@@ -187,19 +187,6 @@ export default function FileEncryptTab() {
 
 
 
-      {/* Step 3 — Generate keys */}
-      <div>
-        <SectionLabel>Step 3 — Generate Keys</SectionLabel>
-        <Btn primary={!keyGenerated} onClick={generateKeys}>
-          {keyGenerated ? "🔄 Regenerate Keys" : "🔑 Generate Keys"}
-        </Btn>
-        {keyGenerated && (
-          <p className="text-xs text-green-400 mt-2">
-            ✅ {algo === "RSA" ? `RSA-${rsaSize}` : `ECC ${eccCurve}`} keys ready — keep this tab open while encrypting/decrypting
-          </p>
-        )}
-      </div>
-
       {/* Step 4 — File drop */}
       <div>
         <SectionLabel>Step 4 — Select File</SectionLabel>
