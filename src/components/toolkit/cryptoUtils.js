@@ -26,13 +26,13 @@ export const ECC_CURVES    = ["P-256", "P-384"];
 
 export const ALGO_META = {
   RSA: {
-    1024: { sec: "80 bit",  spd: "Fast",   note: "Legacy — not recommended for new systems" },
-    2048: { sec: "112 bit", spd: "Medium", note: "Current standard — widely used" },
-    3072: { sec: "128 bit", spd: "Slow",   note: "High security — future-proof" },
+    1024: { note: "Legacy — not recommended for new systems" },
+    2048: { note: "Current standard — widely used" },
+    3072: { note: "High security — future-proof" },
   },
   ECC: {
-    "P-256": { sec: "128 bit", spd: "Fast",        note: "Standard curve — used in TLS, Apple, Google" },
-    "P-384": { sec: "192 bit", spd: "Medium-fast",  note: "High security — used in NSA Suite B" },
+    "P-256": { note: "Standard curve — used in TLS, Apple, Google" },
+    "P-384": { note: "High security — used in NSA Suite B" },
   },
 };
 

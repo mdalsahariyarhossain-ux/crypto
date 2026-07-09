@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import PerformanceChartPage from "./PerformanceChartPage";
-import WorkloadAnalysisPage from "./WorkloadAnalysisPage";
+import PerformanceChart from "../components/PerformanceChart";
+import WorkloadAnalysis from "../components/WorkloadAnalysis";
 
 export default function AnalyticsDashboard() {
   const [selectedGraph, setSelectedGraph] = useState("performance");
@@ -79,9 +79,9 @@ export default function AnalyticsDashboard() {
       {/* Full Graph Section */}
       <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 min-h-[600px]">
         {selectedGraph === "performance" ? (
-          <PerformanceChartPage selectedAlgo={selectedAlgo} />
+          <PerformanceChart selectedAlgo={selectedAlgo} />
         ) : (
-          <WorkloadAnalysisPage selectedAlgo={selectedAlgo} />
+          <WorkloadAnalysis selectedAlgo={selectedAlgo} />
         )}
       </div>
     </div>

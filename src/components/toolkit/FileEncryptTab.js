@@ -11,7 +11,6 @@ export default function FileEncryptTab() {
   const [progress, setProgress] = useState(0);
   const [busy, setBusy]         = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [keyGenerated, setKeyGenerated] = useState(false);
 
   const inputRef   = useRef();
   const keyPairRef = useRef(null);   // RSA key pair
@@ -39,7 +38,6 @@ export default function FileEncryptTab() {
     keyPairRef.current = null;
     aesKeyRef.current  = null;
     encMetaRef.current = null;
-    setKeyGenerated(false);
     setStatus("");
   }
 
@@ -62,7 +60,6 @@ export default function FileEncryptTab() {
           { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]
         );
       }
-      setKeyGenerated(true);
       setStatus(`✅ ${algo === "RSA" ? `RSA-${rsaSize}` : `ECC ${eccCurve}`} keys ready.`);
     } catch(e) { setStatus("❌ Key generation failed: " + e.message); }
   }
@@ -187,22 +184,9 @@ export default function FileEncryptTab() {
 
 
 
-      {/* Step 3 — Generate keys */}
+      {/* Step 3 — File drop */}
       <div>
-        <SectionLabel>Step 3 — Generate Keys</SectionLabel>
-        <Btn primary={!keyGenerated} onClick={generateKeys}>
-          {keyGenerated ? "🔄 Regenerate Keys" : "🔑 Generate Keys"}
-        </Btn>
-        {keyGenerated && (
-          <p className="text-xs text-green-400 mt-2">
-            ✅ {algo === "RSA" ? `RSA-${rsaSize}` : `ECC ${eccCurve}`} keys ready — keep this tab open while encrypting/decrypting
-          </p>
-        )}
-      </div>
-
-      {/* Step 4 — File drop */}
-      <div>
-        <SectionLabel>Step 4 — Select File</SectionLabel>
+        <SectionLabel>Step 3 — Select File</SectionLabel>
         <div
           onClick={() => inputRef.current.click()}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
@@ -227,10 +211,10 @@ export default function FileEncryptTab() {
         </div>
       </div>
 
-      {/* Step 5 — Actions */}
+      {/* Step 4 — Actions */}
       {file && (
         <div>
-          <SectionLabel>Step 5 — Encrypt or Decrypt</SectionLabel>
+          <SectionLabel>Step 4 — Encrypt or Decrypt</SectionLabel>
           <div className="flex gap-3">
             <Btn primary onClick={encryptFile} disabled={busy}>🔒 Encrypt & Download</Btn>
             <Btn onClick={decryptFile} disabled={busy}>🔓 Decrypt & Download</Btn>
