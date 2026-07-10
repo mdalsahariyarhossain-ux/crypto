@@ -10,6 +10,7 @@ import ComparisonPage from "./pages/ComparisonPage";
 import EncryptionDecryptionPage from "./pages/EncryptionDecryptionPage";
 import ToolkitPage from "./pages/ToolkitPage";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import WebsiteAnalyzerPage from "./pages/WebsiteAnalyzerPage";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           <Route path="/benchmark" element={<ComparisonPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
           <Route path="/Encryption-Decryption" element={ <EncryptionDecryptionPage />} />
+          <Route path="/Website-Analyzer" element={<WebsiteAnalyzerPage />} />
           <Route path="/Toolkit" element={<ToolkitPage />} />
         </Routes>
 

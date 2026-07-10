@@ -117,6 +117,7 @@ function Header() {
               ["📈", "/Graph", "Performance Charts"],
               ["🛠️", "/Toolkit", "Toolkit performance"],
               ["🛡️", "/encryption-Decryption", "Encryption & Decryption Runtime"],
+              ["🌐", "/Website-Analyzer", "Website Analyzer"],
             ].map(([icon, path, label]) => (
               <li key={path}>
                 <a
