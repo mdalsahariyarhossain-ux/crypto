@@ -184,6 +184,7 @@ export default function FileEncryptTab() {
 
 
 
+
       {/* Step 3 — File drop */}
       <div>
         <SectionLabel>Step 3 — Select File</SectionLabel>
