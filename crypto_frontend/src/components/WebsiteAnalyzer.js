@@ -17,7 +17,7 @@ export default function WebsiteAnalyzer() {
     setResult(null);
 
     try {
-      const res = await fetch("http://localhost:4000/api/certificate", {
+      const res = await fetch("https://crypto-z0td.onrender.com/api/certificate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

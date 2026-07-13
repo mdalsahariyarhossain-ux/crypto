@@ -41,5 +41,5 @@ app.post("/api/ai-advisor", async (req, res) => {
 });
 
 app.listen(4000, () => {
-  console.log("✅ Proxy server running on http://localhost:4000");
+  console.log("✅ Proxy server running on https://crypto-z0td.onrender.com");
 });
