@@ -112,31 +112,54 @@ function Header() {
           <ul className="space-y-1">
             {[
               ["🏠", "/", "Home"],
-              ["⚡", "/benchmark", "11-Step Comparison Wizard"],
+              ["⚡", "/Wizard-Flow", "RSA & ECC Comparison Wizard"],
               ["🔑", "/key-generator", "Standalone Key Generator"],
-              ["📈", "/graph", "Performance Graphs"],
+              ["🔐", "/Encryption-Decryption", "Encryption/Decryption Benchmark"],
               ["🛠️", "/Toolkit", "Symmetric/Hybrid Toolkit"],
-              ["🔐", "/Encryption-Decryption", "Encryption/Decryption Benchmarks"],
+              ["🌐", "/Website-Analyzer", "Website Certificate Analyzer"],
+              ["🤖", "/AI-Advisor", "AI Advisor"],
             ].map(([icon, path, label]) => (
 
 
               <li key={path}>
                 <a
-                  href={path}
-                  onClick={closeMenu}
-                  className="
-                    group
-                    flex items-center
-                    gap-3
-                    rounded-lg
-                    px-3 py-2
-                    border border-transparent
-                    hover:border-sky-400/40
-                    hover:bg-slate-800/60
-                    hover:-translate-y-0.5
-                    transition-all
-                  "
-                >
+  href={path}
+  onClick={(e) => {
+    if (path === "/Wizard-Flow") {
+      e.preventDefault();
+
+      closeMenu();
+
+      if (window.location.pathname !== "/") {
+        window.location.href = "/#quick-start";
+        return;
+      }
+
+      setTimeout(() => {
+        document.getElementById("quick-start")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 200);
+
+      return;
+    }
+
+    closeMenu();
+  }}
+  className="
+    group
+    flex items-center
+    gap-3
+    rounded-lg
+    px-3 py-2
+    border border-transparent
+    hover:border-sky-400/40
+    hover:bg-slate-800/60
+    hover:-translate-y-0.5
+    transition-all
+  "
+>
                   <span className="text-base">{icon}</span>
                   <span className="text-[13px] text-slate-300 group-hover:text-sky-400 transition">
                     {label}

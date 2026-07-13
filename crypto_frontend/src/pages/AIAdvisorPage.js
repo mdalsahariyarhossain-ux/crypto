@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Btn,SectionLabel} from "./UIComponents";
+import {Btn,SectionLabel} from "../components/toolkit/UIComponents";
 
 const EXAMPLES = [
   { label: "🏦 Banking app",      text: "I want to secure login tokens for a mobile banking app" },

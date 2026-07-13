@@ -5,10 +5,6 @@ const fetch = require("node-fetch");
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// ── Free Google Gemini API key ────────────────────────────────────────────────
-// Get it FREE from: https://aistudio.google.com/app/apikey
-// No credit card needed!
 const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"; // ← paste your free key here
 
 app.post("/api/ai-advisor", async (req, res) => {

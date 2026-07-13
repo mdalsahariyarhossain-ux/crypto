@@ -2,15 +2,13 @@ import { useState, useRef } from "react";
 import {Btn,OutputBox,SectionLabel} from "./UIComponents";
 import {ab2b64,RSA_KEY_SIZES,ECC_CURVES,ALGO_META} from "./cryptoUtils";
 
-export default function EncryptTab() {
+export default function TextEncryptTab() {
   const [algo, setAlgo]           = useState("RSA");
   const [rsaSize, setRsaSize]     = useState(2048);
   const [eccCurve, setEccCurve]   = useState("P-256");
   const [plaintext, setPlaintext] = useState("");
   const [ciphertext, setCiphertext] = useState("");
   const [decryptedText, setDecryptedText] = useState("");
-  const [pubKey, setPubKey]       = useState("");
-  const [privKey, setPrivKey]     = useState("");
   const [status, setStatus]       = useState("");
 
   const keyPairRef    = useRef(null);
@@ -18,56 +16,17 @@ export default function EncryptTab() {
   const lastCipherRef = useRef(null);
   // track which key was last generated so decrypt uses right one
   const lastAlgoRef   = useRef(null);
-  const lastSizeRef   = useRef(null);
 
   const currentKey  = algo === "RSA" ? rsaSize : eccCurve;
   const meta        = ALGO_META[algo][currentKey];
 
-  async function genKeys() {
-    setStatus("Generating keys…");
-    setPubKey(""); setPrivKey("");
-    keyPairRef.current = null; aesKeyRef.current = null;
-    try {
-      if (algo === "RSA") {
-        const kp = await crypto.subtle.generateKey(
-          { name: "RSA-OAEP", modulusLength: rsaSize, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
-          true, ["encrypt", "decrypt"]
-        );
-        keyPairRef.current = kp;
-        lastAlgoRef.current = "RSA"; lastSizeRef.current = rsaSize;
-        const pub  = await crypto.subtle.exportKey("spki", kp.publicKey);
-        const priv = await crypto.subtle.exportKey("pkcs8", kp.privateKey);
-        setPubKey("-----BEGIN PUBLIC KEY-----\n"  + ab2b64(pub)  + "\n-----END PUBLIC KEY-----");
-        setPrivKey("-----BEGIN PRIVATE KEY-----\n" + ab2b64(priv) + "\n-----END PRIVATE KEY-----");
-        setStatus(`✅ RSA-${rsaSize} key pair generated.`);
-      } else {
-        const kp = await crypto.subtle.generateKey(
-          { name: "ECDH", namedCurve: eccCurve }, true, ["deriveKey"]
-        );
-        keyPairRef.current = kp;
-        lastAlgoRef.current = "ECC"; lastSizeRef.current = eccCurve;
-        aesKeyRef.current = await crypto.subtle.generateKey(
-          { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]
-        );
-        const pub  = await crypto.subtle.exportKey("spki", kp.publicKey);
-        const priv = await crypto.subtle.exportKey("pkcs8", kp.privateKey);
-        setPubKey("-----BEGIN PUBLIC KEY-----\n"  + ab2b64(pub)  + "\n-----END PUBLIC KEY-----");
-        setPrivKey("-----BEGIN PRIVATE KEY-----\n" + ab2b64(priv) + "\n-----END PRIVATE KEY-----");
-        setStatus(`✅ ECC ${eccCurve} key pair generated.`);
-      }
-    } catch (e) { setStatus("❌ Key generation failed: " + e.message); }
-  }
-
   async function doEncrypt() {
     if (!plaintext.trim()) { setStatus("Please enter a message."); return; }
-    // auto-generate keys if none or algo/size changed
-    if (!keyPairRef.current || lastAlgoRef.current !== algo || lastSizeRef.current !== currentKey) {
-      await genKeys();
-    }
+   
     const enc = new TextEncoder();
     try {
       if (algo === "RSA") {
-        const ct = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, keyPairRef.current.publicKey, enc.encode(plaintext));
+        const ct = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, enc.encode(plaintext));
         lastCipherRef.current = ct;
         setCiphertext(ab2b64(ct));
         setStatus(`✅ Encrypted with RSA-${rsaSize}-OAEP.`);
@@ -240,22 +199,6 @@ export default function EncryptTab() {
           {decryptedText || "Decrypted text will appear here..."}
         </OutputBox>
 
-      </div>
-
-      {/* Keys */}
-      <div>
-        <div className="border-t border-slate-700 my-2" />
-        <SectionLabel>Generated Keys</SectionLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-slate-500 mb-1">Public key (share this)</p>
-            <OutputBox mono>{pubKey || "Not generated yet"}</OutputBox>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 mb-1">Private key (keep secret)</p>
-            <OutputBox mono>{privKey || "Not generated yet"}</OutputBox>
-          </div>
-        </div>
       </div>
 
       {status && <p className="text-sm text-slate-400">{status}</p>}

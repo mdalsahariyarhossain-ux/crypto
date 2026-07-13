@@ -41,32 +41,9 @@ export default function FileEncryptTab() {
     setStatus("");
   }
 
-  async function generateKeys() {
-    setStatus("Generating keys…");
-    try {
-      if (algo === "RSA") {
-        const kp = await crypto.subtle.generateKey(
-          { name: "RSA-OAEP", modulusLength: rsaSize, publicExponent: new Uint8Array([1,0,1]), hash: "SHA-256" },
-          true, ["encrypt", "decrypt"]
-        );
-        keyPairRef.current = kp;
-      } else {
-        // ECC: generate ECDH pair + ephemeral AES session key
-        const kp = await crypto.subtle.generateKey(
-          { name: "ECDH", namedCurve: eccCurve }, true, ["deriveKey"]
-        );
-        keyPairRef.current = kp;
-        aesKeyRef.current = await crypto.subtle.generateKey(
-          { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]
-        );
-      }
-      setStatus(`✅ ${algo === "RSA" ? `RSA-${rsaSize}` : `ECC ${eccCurve}`} keys ready.`);
-    } catch(e) { setStatus("❌ Key generation failed: " + e.message); }
-  }
 
   async function encryptFile() {
     if (!file) { setStatus("Please select a file first."); return; }
-    if (!keyPairRef.current) { await generateKeys(); }
     setBusy(true); setStatus("Encrypting file…"); setProgress(0);
     try {
       const buf = await file.arrayBuffer();

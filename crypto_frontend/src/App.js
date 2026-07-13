@@ -10,6 +10,12 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import HomeOptions from "./components/HomeOptions";
 import AlgorithmComparison from "./components/AlgorithmComparison";
 import AlgorithmUseCases from "./components/AlgorithmUseCases";
+import WebsiteAnalyzerPage from "./pages/WebsiteAnalyzerPage";
+import AIAdvisorPage from "./pages/AIAdvisorPage";
+import TextEncryptPage from "./pages/TextEncryptPage";
+import FileEncryptPage from "./pages/FileEncryptPage";
+
+
 
 function App() {
   return (
@@ -39,10 +45,14 @@ function App() {
           {/* INDIVIDUAL PAGES */}
           <Route path="/key-generator" element={<KeyGeneratorPage />} />
           <Route path="/graph" element={<AnalyticsDashboard />} />
-          <Route path="/benchmark" element={<WizardFlowPage />} />
+          <Route path="/Wizard-Flow" element={<WizardFlowPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
           <Route path="/Encryption-Decryption" element={<EncryptionDecryptionPage />} />
           <Route path="/Toolkit" element={<ToolkitPage />} />
+          <Route path="/Website-Analyzer" element={<WebsiteAnalyzerPage />} />
+          <Route path="/AI-Advisor" element={<AIAdvisorPage />} />
+          <Route path="/text-encrypt" element={<TextEncryptPage />} />
+          <Route path="/file-encrypt" element={<FileEncryptPage />} />
         </Routes>
 
           <footer className="text-xs text-center text-slate-400 mt-4">
