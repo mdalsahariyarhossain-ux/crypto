@@ -112,13 +112,14 @@ function Header() {
           <ul className="space-y-1">
             {[
               ["🏠", "/", "Home"],
-              ["🔑", "/key-generator", "Key Generator"],
-              ["⚖️", "/benchmark", "RSA & ECC Runtime"],
-              ["📈", "/Graph", "Performance Charts"],
-              ["🛠️", "/Toolkit", "Toolkit performance"],
-              ["🛡️", "/encryption-Decryption", "Encryption & Decryption Runtime"],
-              ["🌐", "/Website-Analyzer", "Website Analyzer"],
+              ["⚡", "/benchmark", "11-Step Comparison Wizard"],
+              ["🔑", "/key-generator", "Standalone Key Generator"],
+              ["📈", "/graph", "Performance Graphs"],
+              ["🛠️", "/Toolkit", "Symmetric/Hybrid Toolkit"],
+              ["🔐", "/Encryption-Decryption", "Encryption/Decryption Benchmarks"],
             ].map(([icon, path, label]) => (
+
+
               <li key={path}>
                 <a
                   href={path}
