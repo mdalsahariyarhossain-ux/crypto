@@ -2,21 +2,21 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 
 import Header from "./components/Header";
-import HomeOptions from "./components/HomeOptions";
-import AlgorithmUseCases from "./components/AlgorithmUseCases";
-import AlgorithmComparison from "./components/AlgorithmComparison";
+import WizardFlowPage from "./pages/WizardFlowPage";
 import KeyGeneratorPage from "./pages/KeyGeneratorPage";
-import ComparisonPage from "./pages/ComparisonPage";
 import EncryptionDecryptionPage from "./pages/EncryptionDecryptionPage";
 import ToolkitPage from "./pages/ToolkitPage";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import HomeOptions from "./components/HomeOptions";
+import AlgorithmComparison from "./components/AlgorithmComparison";
+import AlgorithmUseCases from "./components/AlgorithmUseCases";
 
 function App() {
   return (
     <div className="bg-slate-900 text-slate-100 min-h-screen">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Header (darkMode removed from header props too) */}
+        {/* Header */}
         <Header />
 
         <Routes>
@@ -38,9 +38,9 @@ function App() {
           {/* INDIVIDUAL PAGES */}
           <Route path="/key-generator" element={<KeyGeneratorPage />} />
           <Route path="/graph" element={<AnalyticsDashboard />} />
-          <Route path="/benchmark" element={<ComparisonPage />} />
+          <Route path="/benchmark" element={<WizardFlowPage />} />
           <Route path="/use-cases" element={<AlgorithmUseCases />} />
-          <Route path="/Encryption-Decryption" element={ <EncryptionDecryptionPage />} />
+          <Route path="/Encryption-Decryption" element={<EncryptionDecryptionPage />} />
           <Route path="/Toolkit" element={<ToolkitPage />} />
         </Routes>
 
@@ -53,3 +53,5 @@ function App() {
 }
 
 export default App;
+
+
