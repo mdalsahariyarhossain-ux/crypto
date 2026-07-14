@@ -176,7 +176,7 @@ function QuickStartCard() {
         {/* Launch button */}
         <button onClick={startWizard}
           className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-900 hover:from-cyan-400 hover:to-teal-400 transition-all active:scale-[0.99] shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2">
-          🚀 Launch 11-Step Comparison Wizard
+          🚀 Launch 9-Step Comparison Wizard
         </button>
 
         {/* Workflow preview */}
