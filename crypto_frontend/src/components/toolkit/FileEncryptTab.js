@@ -41,11 +41,39 @@ export default function FileEncryptTab() {
     setStatus("");
   }
 
+  // Generate the RSA keypair or ECC-session AES key on demand, once per
+  // session (until algo/size changes and resetKeys() clears it).
+  async function ensureKeys() {
+    if (algo === "RSA") {
+      if (!keyPairRef.current) {
+        keyPairRef.current = await crypto.subtle.generateKey(
+          {
+            name: "RSA-OAEP",
+            modulusLength: rsaSize,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
+          },
+          true,
+          ["encrypt", "decrypt"]
+        );
+      }
+    } else {
+      if (!aesKeyRef.current) {
+        aesKeyRef.current = await crypto.subtle.generateKey(
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["encrypt", "decrypt"]
+        );
+      }
+    }
+  }
 
   async function encryptFile() {
     if (!file) { setStatus("Please select a file first."); return; }
     setBusy(true); setStatus("Encrypting file…"); setProgress(0);
     try {
+      await ensureKeys();
+
       const buf = await file.arrayBuffer();
       await animBar(30);
 
@@ -87,7 +115,13 @@ export default function FileEncryptTab() {
 
   async function decryptFile() {
     if (!file) { setStatus("Please select the .enc file."); return; }
-    if (!keyPairRef.current) { setStatus("❌ No keys found. Generate keys first, then encrypt a file, then decrypt."); return; }
+
+    const hasKey = algo === "RSA" ? !!keyPairRef.current : !!aesKeyRef.current;
+    if (!hasKey) {
+      setStatus("❌ No keys found for the selected algorithm. Encrypt a file first in this session (with the same algorithm/size), then decrypt.");
+      return;
+    }
+
     setBusy(true); setStatus("Decrypting file…"); setProgress(0);
     try {
       const buf  = await file.arrayBuffer();
@@ -118,7 +152,7 @@ export default function FileEncryptTab() {
       const name = file.name.endsWith(".enc") ? file.name.slice(0,-4) : "decrypted_" + file.name;
       downloadBlob(new Uint8Array(plain), name);
       setStatus("✅ Decrypted successfully · Downloaded as " + name);
-    } catch(e) { setStatus("❌ Decryption failed. Make sure you use the same keys used to encrypt."); }
+    } catch(e) { setStatus("❌ Decryption failed. Make sure you use the same algorithm and keys used to encrypt."); }
     finally { setBusy(false); }
   }
 
@@ -215,4 +249,3 @@ export default function FileEncryptTab() {
     </div>
   );
 }
-

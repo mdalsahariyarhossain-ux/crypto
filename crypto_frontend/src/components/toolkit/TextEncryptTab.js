@@ -20,80 +20,110 @@ export default function TextEncryptTab() {
   const currentKey  = algo === "RSA" ? rsaSize : eccCurve;
   const meta        = ALGO_META[algo][currentKey];
 
-  async function doEncrypt() {
-    if (!plaintext.trim()) { setStatus("Please enter a message."); return; }
-   
-    const enc = new TextEncoder();
-    try {
-      if (algo === "RSA") {
-        const ct = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, enc.encode(plaintext));
-        lastCipherRef.current = ct;
-        setCiphertext(ab2b64(ct));
-        setStatus(`✅ Encrypted with RSA-${rsaSize}-OAEP.`);
-      } else {
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKeyRef.current, enc.encode(plaintext));
-        const combined = new Uint8Array(iv.length + ct.byteLength);
-        combined.set(iv); combined.set(new Uint8Array(ct), iv.length);
-        lastCipherRef.current = combined.buffer;
-        setCiphertext(ab2b64(combined.buffer));
-        setStatus(`✅ Encrypted with ECC ${eccCurve} + AES-GCM.`);
-      }
-    } catch (e) { setStatus("❌ Encryption failed: " + e.message); }
-  }
+async function doEncrypt() {
+  if (!plaintext.trim()) { setStatus("Please enter a message."); return; }
 
-  async function doDecrypt() {
-    if (!ciphertext.trim()) {
-      setStatus("Please enter ciphertext.");
-      return;
-    }
-
-    // Guard: no key generated yet, or key was cleared by switching algo/size
-    if (!keyPairRef.current && !aesKeyRef.current) {
-      setStatus("❌ No key available. Click Encrypt first — decryption only works with the key generated in this session.");
-      return;
-    }
-
-    try {
-      const binary = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
-
-      let plain;
-
-      if (lastAlgoRef.current === "RSA") {
-        if (!keyPairRef.current?.privateKey) {
-          setStatus("❌ RSA private key missing. Click Encrypt to regenerate keys.");
-          return;
-        }
-        plain = await crypto.subtle.decrypt(
-          { name: "RSA-OAEP" },
-          keyPairRef.current.privateKey,
-          binary
-        );
-      } else {
-        if (!aesKeyRef.current) {
-          setStatus("❌ AES key missing. Click Encrypt to regenerate keys.");
-          return;
-        }
-        const iv = binary.slice(0, 12);
-        const encrypted = binary.slice(12);
-
-        plain = await crypto.subtle.decrypt(
+  const enc = new TextEncoder();
+  try {
+    if (algo === "RSA") {
+      if (!keyPairRef.current) {
+        keyPairRef.current = await crypto.subtle.generateKey(
           {
-            name: "AES-GCM",
-            iv,
+            name: "RSA-OAEP",
+            modulusLength: rsaSize,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
           },
-          aesKeyRef.current,
-          encrypted
+          true,
+          ["encrypt", "decrypt"]
         );
+        lastAlgoRef.current = "RSA";
       }
 
-      setDecryptedText(new TextDecoder().decode(plain));
-      setStatus("✅ Decrypted successfully.");
-    } catch (e) {
-      setStatus("❌ Decryption failed: " + e.message + " — ciphertext may not match the current session's key.");
+      const ct = await crypto.subtle.encrypt(
+        { name: "RSA-OAEP" },
+        keyPairRef.current.publicKey,
+        enc.encode(plaintext)
+      );
+
+      lastCipherRef.current = ct;
+      setCiphertext(ab2b64(ct));
+      setStatus(`✅ Encrypted with RSA-${rsaSize}`);
+    } else {
+      // ECC path: Web Crypto has no direct ECC encryption primitive,
+      // so we use AES-GCM as the actual cipher here.
+      if (!aesKeyRef.current) {
+        aesKeyRef.current = await crypto.subtle.generateKey(
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["encrypt", "decrypt"]
+        );
+        lastAlgoRef.current = "ECC";
+      }
+
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        aesKeyRef.current,
+        enc.encode(plaintext)
+      );
+
+      const combined = new Uint8Array(iv.length + ct.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(ct), iv.length);
+
+      lastCipherRef.current = combined.buffer;
+      setCiphertext(ab2b64(combined.buffer));
+      setStatus(`✅ Encrypted with ECC ${eccCurve} + AES-GCM`);
     }
+  } catch (e) { setStatus("❌ Encryption failed: " + e.message); }
+}
+
+async function doDecrypt() {
+  if (!ciphertext.trim()) {
+    setStatus("Please enter ciphertext.");
+    return;
   }
 
+  if (!keyPairRef.current && !aesKeyRef.current) {
+    setStatus("❌ No key available. Click Encrypt first — decryption only works with the key generated in this session.");
+    return;
+  }
+
+  try {
+    const binary = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
+    let plain;
+
+    if (lastAlgoRef.current === "RSA") {
+      if (!keyPairRef.current?.privateKey) {
+        setStatus("❌ RSA private key missing. Click Encrypt to regenerate keys.");
+        return;
+      }
+      plain = await crypto.subtle.decrypt(
+        { name: "RSA-OAEP" },
+        keyPairRef.current.privateKey,
+        binary.buffer
+      );
+    } else {
+      if (!aesKeyRef.current) {
+        setStatus("❌ No key available. Click Encrypt first.");
+        return;
+      }
+      const iv = binary.slice(0, 12);
+      const data = binary.slice(12);
+      plain = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        aesKeyRef.current,
+        data.buffer
+      );
+    }
+
+    setDecryptedText(new TextDecoder().decode(plain));
+    setStatus("✅ Decrypted successfully.");
+  } catch (e) {
+    setStatus("❌ Decryption failed: " + e.message + " — ciphertext may not match the current session's key.");
+  }
+}
   return (
     <div className="space-y-5">
 
